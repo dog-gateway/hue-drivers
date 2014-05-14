@@ -59,11 +59,4 @@ public class HueGatewayDriverInstance implements HueBridge
 		
 	}
 
-	@Override
-	public void notifyStateChanged(State newState)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
 }
