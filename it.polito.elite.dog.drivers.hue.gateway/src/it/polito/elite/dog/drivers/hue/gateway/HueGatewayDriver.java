@@ -28,6 +28,7 @@ import it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -54,27 +55,25 @@ public class HueGatewayDriver implements Driver, ManagedService
 	// String identifier for driver id
 	public static final String DRIVER_ID = "it.polito.elite.drivers.hue.gateway";
 
-	// a reference to the network driver (currently not used by this driver
-	// version, in the future might be used to implement gateway-specific
-	// functionalities.
+	// a reference to the network driver
 	private AtomicReference<HueNetwork> network;
 
 	// a reference to the device factory service used to handle run-time
-	// creation of devices in dog as response to network association.
+	// creation of devices in dog.
 	private AtomicReference<DeviceFactory> deviceFactory;
 
 	// the registration object needed to handle the life span of this bundle in
-	// the OSGi framework (it is a ServiceRegistration object for use by the
-	// bundle registering the service to update the service's properties or to
-	// unregister the service).
+	// the OSGi framework (it is a ServiceRegistration object used by the
+	// bundle for registering the provided service, to update the service's
+	// properties, or to unregister the service).
 	private ServiceRegistration<?> regDriver;
 
 	// register this driver as a gateway used by device-specific drivers
 	private ServiceRegistration<?> regHueGateway;
 
-	// the set of currently connected gateways... indexed by their ids
-	// for future use, now hosts only a single value
-	private ConcurrentHashMap<String,HueGatewayDriverInstance> connectedGateways;
+	// the set of currently connected gateways... indexed by their IP addresses
+	// as strings.
+	private ConcurrentHashMap<String, HueGatewayDriverInstance> connectedGateways;
 
 	/**
 	 * The class constructor, initializes inner datastructures to prepare the
@@ -111,7 +110,7 @@ public class HueGatewayDriver implements Driver, ManagedService
 		// remove the service from the OSGi framework
 		this.unRegister();
 	}
-	
+
 	/**
 	 * Registers this driver in the OSGi framework, making its services
 	 * available to all the other bundles living in the same or in connected
@@ -163,7 +162,6 @@ public class HueGatewayDriver implements Driver, ManagedService
 	public void addedNetworkDriver(HueNetwork networkDriver)
 	{
 		this.network.set(networkDriver);
-
 	}
 
 	/**
@@ -197,7 +195,7 @@ public class HueGatewayDriver implements Driver, ManagedService
 			// unregisters this driver from the OSGi framework
 			unRegister();
 	}
-	
+
 	@SuppressWarnings("rawtypes")
 	@Override
 	public int match(ServiceReference reference) throws Exception
@@ -241,31 +239,48 @@ public class HueGatewayDriver implements Driver, ManagedService
 			// get the device id
 			String deviceId = device.getDeviceId();
 
-			if (!this.isGatewayAvailable(deviceId))
+			// get the device ip
+			Set<String> allGatewayIpAddresses = device.getDeviceDescriptor()
+					.getSimpleConfigurationParams()
+					.get(HueInfo.GATEWAY_ADDRESS);
+
+			// if not null, it is a singleton
+			if (allGatewayIpAddresses != null)
 			{
-				// create a new driver instance
-				HueGatewayDriverInstance driverInstance = new HueGatewayDriverInstance(
-						this.network.get(), this.deviceFactory.get(), device,
-						this.context);
+				// get the endpoint address of the connecting gateway
+				String gatewayAddress = allGatewayIpAddresses.iterator().next();
 
-				// associate device and driver
-				device.setDriver(driverInstance);
-
-				// store the just created gateway instance
-				synchronized (connectedGateways)
+				// check not null
+				if ((gatewayAddress != null) && (!gatewayAddress.isEmpty()))
 				{
-					// store a reference to the gateway driver
-					connectedGateways.put(device.getDeviceId(), driverInstance);
+					if (!this.isGatewayAvailable(deviceId))
+					{
+						// create a new driver instance
+						HueGatewayDriverInstance driverInstance = new HueGatewayDriverInstance(
+								this.network.get(), this.deviceFactory.get(),
+								device, gatewayAddress, this.context);
+
+						// associate device and driver
+						device.setDriver(driverInstance);
+
+						// store the just created gateway instance
+						synchronized (connectedGateways)
+						{
+							// store a reference to the gateway driver
+							connectedGateways.put(device.getDeviceId(),
+									driverInstance);
+						}
+
+						// modify the service description causing a forcing the
+						// framework to send a modified service notification
+						final Hashtable<String, Object> propDriver = new Hashtable<String, Object>();
+						propDriver.put(DeviceCostants.DRIVER_ID, DRIVER_ID);
+						propDriver.put(DeviceCostants.GATEWAY_COUNT,
+								connectedGateways.size());
+
+						this.regDriver.setProperties(propDriver);
+					}
 				}
-
-				// modify the service description causing a forcing the
-				// framework to send a modified service notification
-				final Hashtable<String, Object> propDriver = new Hashtable<String, Object>();
-				propDriver.put(DeviceCostants.DRIVER_ID, DRIVER_ID);
-				propDriver.put(DeviceCostants.GATEWAY_COUNT,
-						connectedGateways.size());
-
-				this.regDriver.setProperties(propDriver);
 			}
 		}
 
@@ -285,19 +300,24 @@ public class HueGatewayDriver implements Driver, ManagedService
 		return connectedGateways.containsKey(gatewayId);
 	}
 
+	/**
+	 * Returns the {@link HueGatewayDriverInstance} associated to the given
+	 * gateway URI
+	 * 
+	 * @param gateway
+	 *            the gateway URI.
+	 * @return the corresponding instance, if exists, null otherwise.
+	 */
 	public Object getSpecificGateway(String gateway)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return this.connectedGateways.get(gateway);
 	}
 
 	@Override
 	public void updated(Dictionary<String, ?> arg0)
 			throws ConfigurationException
 	{
-		// TODO Auto-generated method stub
-		
+		// TODO Handle configuration here....
 	}
-
 
 }

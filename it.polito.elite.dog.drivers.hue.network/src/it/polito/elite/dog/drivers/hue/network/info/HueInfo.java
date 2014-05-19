@@ -12,9 +12,12 @@ public class HueInfo extends ConfigurationConstants
 	/**
 	 * The local device identifier
 	 */
-	
 	public static final String LOCAL_ID ="LIdentifier";
 	
+	/**
+	 * The gateway IP address
+	 */
+	public static String GATEWAY_ADDRESS = "IPAddress";
 		
 
 }
