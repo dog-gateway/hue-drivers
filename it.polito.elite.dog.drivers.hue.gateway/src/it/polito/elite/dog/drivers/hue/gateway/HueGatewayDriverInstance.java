@@ -18,6 +18,7 @@
  */
 package it.polito.elite.dog.drivers.hue.gateway;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,15 +27,20 @@ import java.util.TimerTask;
 
 import it.polito.elite.dog.core.devicefactory.api.DeviceFactory;
 import it.polito.elite.dog.core.library.model.ControllableDevice;
+import it.polito.elite.dog.core.library.model.DeviceDescriptor;
 import it.polito.elite.dog.core.library.model.DeviceDescriptorFactory;
 import it.polito.elite.dog.core.library.model.DeviceStatus;
+import it.polito.elite.dog.core.library.model.devicecategory.ColorDimmableLight;
 import it.polito.elite.dog.core.library.model.devicecategory.Controllable;
+import it.polito.elite.dog.core.library.model.devicecategory.DimmableLight;
 import it.polito.elite.dog.core.library.model.devicecategory.HueBridge;
+import it.polito.elite.dog.core.library.model.devicecategory.OnOffLight;
 import it.polito.elite.dog.core.library.model.state.ConnectionState;
 import it.polito.elite.dog.core.library.model.statevalue.ConnectedStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.DisconnectedStateValue;
 import it.polito.elite.dog.core.library.util.LogHelper;
 import it.polito.elite.dog.drivers.hue.network.HueDriverInstance;
+import it.polito.elite.dog.drivers.hue.network.info.HueInfo;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueConnectionListener;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork;
 
@@ -44,6 +50,7 @@ import org.osgi.service.log.LogService;
 import com.philips.lighting.model.PHBridge;
 import com.philips.lighting.model.PHBridgeResourcesCache;
 import com.philips.lighting.model.PHLight;
+import com.philips.lighting.model.PHLight.PHLightType;
 
 public class HueGatewayDriverInstance extends HueDriverInstance implements
 		HueBridge, HueConnectionListener
@@ -63,7 +70,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	// the device discovery delay
 	// TODO: find a more "OSGi" way of performing this task (i.e., waiting for
 	// complete device attachment before starting discovery)
-	private int deviceDiscoveryDelayMillis = 180000;
+	private int deviceDiscoveryDelayMillis = 30000;
 
 	// the device discovery enabled flag
 	private boolean discoveryEnabled = false;
@@ -158,14 +165,8 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 				"Connected to the HueBridge located at: " + this.bridgeIp);
 
 		// handle device discovery ...
-		PHBridgeResourcesCache cache = bridge.getResourceCache();
-
-        List<PHLight> allLights = cache.getAllLights();
-        
-        for(PHLight light : allLights)
-        {
-        	this.logger.log(LogService.LOG_DEBUG, "Found light with local id:"+light.getIdentifier());
-        }
+		if (this.discoveryEnabled)
+			this.findNewDevices(bridge);
 	}
 
 	@Override
@@ -184,7 +185,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	public void onCacheUpdated(int flag, PHBridge bridge)
 	{
 		// handle the bridge status update if needed...
-		
+
 		// trigger device update...
 
 		// handle device discovery ...
@@ -231,6 +232,143 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		// initialize the state
 		this.currentState.setState(ConnectionState.class.getSimpleName(),
 				new ConnectionState(new DisconnectedStateValue()));
+	}
+
+	/**
+	 * Search for new devices (color dimmable lights) and handle the discovery
+	 * process for devices that not yet handled by drivers "connected" to the
+	 * current gateway instance.
+	 * 
+	 * @param bridge
+	 */
+	private void findNewDevices(PHBridge bridge)
+	{
+		// get the latest information from the api cache (updated when the
+		// bridge connects and on subsequent heart beats).
+		PHBridgeResourcesCache cache = bridge.getResourceCache();
+
+		// find all lights connected to the bridge
+		List<PHLight> allLights = cache.getAllLights();
+
+		// iterate over all lights and check if they are already handled or not
+		for (PHLight light : allLights)
+		{
+			// debug, log the found light
+			this.logger.log(LogService.LOG_DEBUG, "Found light with local id:"
+					+ light.getIdentifier() + " type: " + light.getLightType());
+
+			// check if the device is already registered
+			if (!this.knownDevices.contains(light.getIdentifier()))
+			{
+				// the light is new and a new device should be created in Dog
+				DeviceDescriptor newDevice = this.buildDeviceDescriptor(light);
+
+				// check not null
+				if (newDevice != null)
+				{
+					// create the device and cross your fingers...
+					this.deviceFactory.addNewDevice(newDevice);
+
+					// in theory the device could be set as known here, however
+					// in the first release it will be set as known only when
+					// Dog actually recognizes it and attaches it to the right
+					// driver. As this might generate some issue, in next
+					// releases this choice might change...
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * Given a {@link PHLight} instance, builds the corresponding Dog device
+	 * descriptor.
+	 * 
+	 * @param light
+	 *            The light instance to model.
+	 * @return the resulting model as a String.
+	 */
+	private DeviceDescriptor buildDeviceDescriptor(PHLight light)
+	{
+		// the device descriptor to return
+		DeviceDescriptor descriptor = null;
+
+		if (this.descriptorFactory != null)
+		{
+			// create a descriptor definition map
+			HashMap<String, Object> descriptorDefinitionData = new HashMap<String, Object>();
+
+			// define the device class
+			// TODO: handle missing light types, now default to on-off
+			String deviceClass = null;
+
+			switch (light.getLightType())
+			{
+			case CT_COLOR_LIGHT:
+			{
+				deviceClass = ColorDimmableLight.class.getSimpleName();
+				break;
+			}
+			case DIM_LIGHT:
+			{
+				deviceClass = DimmableLight.class.getSimpleName();
+				break;
+			}
+			case ON_OFF_LIGHT:
+			default:
+			{
+				deviceClass = OnOffLight.class.getSimpleName();
+				break;
+			}
+			}
+
+			if ((deviceClass != null) && (!deviceClass.isEmpty()))
+			{
+				// store the device name
+				descriptorDefinitionData.put(DeviceDescriptorFactory.NAME,
+						this.device.getDeviceId() + "_" + deviceClass + "_"
+								+ light.getIdentifier());
+
+				// store the device description
+				descriptorDefinitionData.put(
+						DeviceDescriptorFactory.DESCRIPTION,
+						"New Device of type " + deviceClass);
+
+				// store the device gateway
+				descriptorDefinitionData.put(DeviceDescriptorFactory.GATEWAY,
+						this.device.getDeviceId());
+
+				// store the device location
+				descriptorDefinitionData.put(DeviceDescriptorFactory.LOCATION,
+						"");
+
+				// store the device local id
+				descriptorDefinitionData.put(HueInfo.LOCAL_ID,
+						light.getIdentifier());
+
+				// get the device descriptor
+				try
+				{
+					descriptor = this.descriptorFactory.getDescriptor(
+							descriptorDefinitionData, deviceClass);
+				} catch (Exception e)
+				{
+					this.logger
+							.log(LogService.LOG_ERROR,
+									"Error while creating DeviceDescriptor for the just added device ",
+									e);
+				}
+
+				// debug dump
+				this.logger.log(
+						LogService.LOG_INFO,
+						"Detected new device:\n\tlocalId: "
+								+ light.getIdentifier() + "\n\tdeviceClass: "
+								+ deviceClass);
+			}
+		}
+
+		return descriptor;
 	}
 
 }
