@@ -18,10 +18,17 @@
  */
 package it.polito.elite.dog.drivers.hue.gateway;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import it.polito.elite.dog.core.devicefactory.api.DeviceFactory;
 import it.polito.elite.dog.core.library.model.ControllableDevice;
 import it.polito.elite.dog.core.library.model.DeviceDescriptorFactory;
 import it.polito.elite.dog.core.library.model.DeviceStatus;
+import it.polito.elite.dog.core.library.model.devicecategory.Controllable;
 import it.polito.elite.dog.core.library.model.devicecategory.HueBridge;
 import it.polito.elite.dog.core.library.model.state.ConnectionState;
 import it.polito.elite.dog.core.library.model.statevalue.ConnectedStateValue;
@@ -35,6 +42,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.service.log.LogService;
 
 import com.philips.lighting.model.PHBridge;
+import com.philips.lighting.model.PHBridgeResourcesCache;
+import com.philips.lighting.model.PHLight;
 
 public class HueGatewayDriverInstance extends HueDriverInstance implements
 		HueBridge, HueConnectionListener
@@ -45,6 +54,9 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	// the device descriptor factory needed to create new device instances.
 	private DeviceDescriptorFactory descriptorFactory;
 
+	// a set holding the currently known devices
+	private Set<String> knownDevices;
+
 	// the drive instance logger
 	private LogHelper logger;
 
@@ -52,8 +64,8 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	// TODO: find a more "OSGi" way of performing this task (i.e., waiting for
 	// complete device attachment before starting discovery)
 	private int deviceDiscoveryDelayMillis = 180000;
-	
-	//the device discovery enabled flag
+
+	// the device discovery enabled flag
 	private boolean discoveryEnabled = false;
 
 	public HueGatewayDriverInstance(HueNetwork hueNetwork,
@@ -65,6 +77,9 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 
 		// create the instance logger
 		this.logger = new LogHelper(context);
+
+		// create the set for storing the currently known devices
+		this.knownDevices = new HashSet<String>();
 
 		// store the device factory instance
 		this.deviceFactory = deviceFactory;
@@ -89,14 +104,19 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 
 		// initialize the device state
 		this.initializeStates();
-	}
 
-	private void initializeStates()
-	{
+		// start the discovery enable timer...
+		// TODO: improve this in order to start as soon as possible
+		Timer discoveryEnablingTimer = new Timer();
+		discoveryEnablingTimer.schedule(new TimerTask()
+		{
 
-		// initialize the state
-		this.currentState.setState(ConnectionState.class.getSimpleName(),
-				new ConnectionState(new DisconnectedStateValue()));
+			@Override
+			public void run()
+			{
+				discoveryEnabled = true;
+			}
+		}, deviceDiscoveryDelayMillis);
 	}
 
 	public PHBridge getBridge()
@@ -107,8 +127,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	@Override
 	public DeviceStatus getState()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return this.currentState;
 	}
 
 	@Override
@@ -121,15 +140,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	@Override
 	public void updateStatus()
 	{
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	protected void specificConfiguration()
-	{
-		// TODO Auto-generated method stub
-
+		((Controllable) this.device).updateStatus();
 	}
 
 	@Override
@@ -147,6 +158,14 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 				"Connected to the HueBridge located at: " + this.bridgeIp);
 
 		// handle device discovery ...
+		PHBridgeResourcesCache cache = bridge.getResourceCache();
+
+        List<PHLight> allLights = cache.getAllLights();
+        
+        for(PHLight light : allLights)
+        {
+        	this.logger.log(LogService.LOG_DEBUG, "Found light with local id:"+light.getIdentifier());
+        }
 	}
 
 	@Override
@@ -165,9 +184,53 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	public void onCacheUpdated(int flag, PHBridge bridge)
 	{
 		// handle the bridge status update if needed...
+		
+		// trigger device update...
 
 		// handle device discovery ...
+		if (this.discoveryEnabled)
+		{
+			// TODO: handle discovery
+		}
 
+	}
+
+	/**
+	 * Adds the device with the given local Id to the set of devices already
+	 * "known" by the gateway instance. This avoids duplication of devices
+	 * during the discovery process
+	 * 
+	 * @param localId
+	 */
+	public void addDevice(String localId)
+	{
+		this.knownDevices.add(localId);
+	}
+
+	/**
+	 * Removes the device with the given localId from the set of known devices,
+	 * thus re-enabling its discovery
+	 * 
+	 * @param localId
+	 * @return The just removed localId
+	 */
+	public String removeDevice(String localId)
+	{
+		return this.removeDevice(localId);
+	}
+
+	@Override
+	protected void specificConfiguration()
+	{
+		// Initially left empty
+	}
+
+	private void initializeStates()
+	{
+
+		// initialize the state
+		this.currentState.setState(ConnectionState.class.getSimpleName(),
+				new ConnectionState(new DisconnectedStateValue()));
 	}
 
 }

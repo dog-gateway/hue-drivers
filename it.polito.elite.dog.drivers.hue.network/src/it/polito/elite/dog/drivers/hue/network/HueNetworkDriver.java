@@ -53,7 +53,7 @@ import com.philips.lighting.model.PHBridge;
 public class HueNetworkDriver implements HueNetwork, PHSDKListener
 {
 	// the default HUE username
-	private String hueUsername = "the-dog-gateway";
+	private String hueUsername = "newdeveloper";
 
 	// the default gateway identifier on HUE bridges
 	private String deviceName = "TheDogGateway";

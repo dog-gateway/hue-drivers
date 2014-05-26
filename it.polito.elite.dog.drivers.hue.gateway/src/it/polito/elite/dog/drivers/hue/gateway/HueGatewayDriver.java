@@ -39,6 +39,7 @@ import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
 import org.osgi.service.device.Device;
 import org.osgi.service.device.Driver;
+import org.osgi.service.log.LogService;
 
 /**
  * @author bonino
@@ -122,7 +123,7 @@ public class HueGatewayDriver implements Driver, ManagedService
 				&& (this.regDriver == null))
 		{
 			Hashtable<String, Object> propDriver = new Hashtable<String, Object>();
-			propDriver.put(DeviceCostants.DRIVER_ID, DRIVER_ID);
+			propDriver.put(DeviceCostants.DRIVER_ID, HueGatewayDriver.DRIVER_ID);
 			propDriver.put(DeviceCostants.GATEWAY_COUNT,
 					connectedGateways.size());
 
@@ -318,6 +319,7 @@ public class HueGatewayDriver implements Driver, ManagedService
 			throws ConfigurationException
 	{
 		// TODO Handle configuration here....
+		this.logger.log(LogService.LOG_DEBUG, "updated");
 	}
 
 }
