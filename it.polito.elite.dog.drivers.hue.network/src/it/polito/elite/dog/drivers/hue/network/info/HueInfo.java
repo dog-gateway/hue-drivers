@@ -19,5 +19,8 @@ public class HueInfo extends ConfigurationConstants
 	 */
 	public static String GATEWAY_ADDRESS = "IPAddress";
 		
-
+	/**
+	 * The step percentage to use in step-based dimming
+	 */
+	public static final String STEP_PERCENT = "stepAsPercentage";
 }

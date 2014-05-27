@@ -59,10 +59,10 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 	protected LogHelper logger;
 
 	// a reference to the network driver
-	private AtomicReference<HueNetwork> network;
+	protected AtomicReference<HueNetwork> network;
 
 	// a reference to the gateway driver
-	private AtomicReference<HueGatewayDriver> gateway;
+	protected AtomicReference<HueGatewayDriver> gateway;
 
 	// the list of instances controlled / spawned by this driver
 	protected Hashtable<String, HueDriverInstance> managedInstances;
