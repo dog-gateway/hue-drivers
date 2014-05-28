@@ -23,4 +23,9 @@ public class HueInfo extends ConfigurationConstants
 	 * The step percentage to use in step-based dimming
 	 */
 	public static final String STEP_PERCENT = "stepAsPercentage";
+	
+	/**
+	 * The maximum brightness of a Hue lamp
+	 */
+	public static final int MAX_BRIGHTNESS = 255;
 }

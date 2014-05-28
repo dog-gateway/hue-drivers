@@ -18,13 +18,6 @@
  */
 package it.polito.elite.dog.drivers.hue.gateway;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-
 import it.polito.elite.dog.core.devicefactory.api.DeviceFactory;
 import it.polito.elite.dog.core.library.model.ControllableDevice;
 import it.polito.elite.dog.core.library.model.DeviceDescriptor;
@@ -44,13 +37,19 @@ import it.polito.elite.dog.drivers.hue.network.info.HueInfo;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueConnectionListener;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.osgi.framework.BundleContext;
 import org.osgi.service.log.LogService;
 
 import com.philips.lighting.model.PHBridge;
 import com.philips.lighting.model.PHBridgeResourcesCache;
 import com.philips.lighting.model.PHLight;
-import com.philips.lighting.model.PHLight.PHLightType;
 
 public class HueGatewayDriverInstance extends HueDriverInstance implements
 		HueBridge, HueConnectionListener

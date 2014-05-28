@@ -89,6 +89,26 @@ public abstract class HueDriverInstance
 	}
 
 	/**
+	 * @return the bridgeIp
+	 */
+	public String getBridgeIp()
+	{
+		return bridgeIp;
+	}
+
+
+
+	/**
+	 * @param bridgeIp the bridgeIp to set
+	 */
+	public void setBridgeIp(String bridgeIp)
+	{
+		this.bridgeIp = bridgeIp;
+	}
+
+
+
+	/**
 	 * Extending classes might implement this method to provide driver-specific
 	 * configurations to be done during the driver creation process, before
 	 * associating the device-specific driver to the network driver

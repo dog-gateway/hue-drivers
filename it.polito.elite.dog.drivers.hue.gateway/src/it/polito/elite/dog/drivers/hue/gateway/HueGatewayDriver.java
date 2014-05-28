@@ -309,7 +309,7 @@ public class HueGatewayDriver implements Driver, ManagedService
 	 *            the gateway URI.
 	 * @return the corresponding instance, if exists, null otherwise.
 	 */
-	public Object getSpecificGateway(String gateway)
+	public HueGatewayDriverInstance getSpecificGateway(String gateway)
 	{
 		return this.connectedGateways.get(gateway);
 	}

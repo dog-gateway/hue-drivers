@@ -44,8 +44,6 @@ import org.osgi.service.device.Device;
 import org.osgi.service.device.Driver;
 import org.osgi.service.log.LogService;
 
-import com.philips.lighting.model.PHBridge;
-
 /**
  * @author bonino
  * 
@@ -91,14 +89,15 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 		// drivers
 		this.network = new AtomicReference<HueNetwork>();
 		this.gateway = new AtomicReference<HueGatewayDriver>();
-		
-		//initialize the list of managed device instances (indexed by device id)
+
+		// initialize the list of managed device instances (indexed by device
+		// id)
 		this.managedInstances = new Hashtable<String, HueDriverInstance>();
-		
-		//intialize the device categories matched by this driver
+
+		// intialize the device categories matched by this driver
 		this.deviceCategories = new HashSet<String>();
 	}
-	
+
 	/**
 	 * Handle the bundle activation
 	 */
@@ -120,12 +119,12 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 		// remove the service from the OSGi framework
 		this.unRegisterHueDeviceDriver();
 	}
-	
+
 	public void addedNetworkDriver(HueNetwork network)
 	{
 		// log network river addition
 		if (this.logger != null)
-			this.logger.log(LogService.LOG_DEBUG,"Added network driver");
+			this.logger.log(LogService.LOG_DEBUG, "Added network driver");
 
 		// store the network driver reference
 		this.network.set(network);
@@ -141,11 +140,10 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 
 			// log network river removal
 			if (this.logger != null)
-				this.logger.log(LogService.LOG_DEBUG,"Removed network driver");
+				this.logger.log(LogService.LOG_DEBUG, "Removed network driver");
 
 		}
 	}
-
 
 	public void addedGatewayDriver(HueGatewayDriver gateway)
 	{
@@ -221,35 +219,43 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 			// get the gateway to which the device is connected
 			String gateway = (String) device.getDeviceDescriptor().getGateway();
 
-			// get the corresponding end point set
-			Set<String> localIdSet = device.getDeviceDescriptor()
-					.getSimpleConfigurationParams().get(HueInfo.LOCAL_ID);
-
-			// get the nodeId
-			String sLocalID = localIdSet.iterator().next();
-
-			// create a new driver instance
-			HueDriverInstance driverInstance = this
-					.createHueDriverInstance(network.get(), device,
-							Integer.parseInt(sLocalID), ((HueGatewayDriverInstance)(this.gateway.get().getSpecificGateway(gateway)))
-									.getBridge(),context);
-
-			// connect this driver instance with the device
-			device.setDriver(driverInstance);
-
-			// store a reference to the connected driver
-			synchronized (this.managedInstances)
+			// check if the gateway is available
+			if (this.gateway.get().isGatewayAvailable(gateway))
 			{
-				this.managedInstances.put(device.getDeviceId(), driverInstance);
+				// get the corresponding end point set
+				Set<String> localIdSet = device.getDeviceDescriptor()
+						.getSimpleConfigurationParams().get(HueInfo.LOCAL_ID);
+
+				// get the nodeId
+				String sLocalID = localIdSet.iterator().next();
+
+				// create a new driver instance
+				HueDriverInstance driverInstance = this
+						.createHueDriverInstance(network.get(), device,
+								sLocalID, this.gateway.get()
+								.getSpecificGateway(gateway), context);
+
+				// connect this driver instance with the device
+				device.setDriver(driverInstance);
+				
+				// mark the device as known
+				this.gateway.get().getSpecificGateway(gateway).addDevice(sLocalID);
+
+				// store a reference to the connected driver
+				synchronized (this.managedInstances)
+				{
+					this.managedInstances.put(device.getDeviceId(),
+							driverInstance);
+				}
 			}
 		}
 
 		return null;
 	}
 
-	public abstract HueDriverInstance createHueDriverInstance(HueNetwork hueNetwork,
-			ControllableDevice device, int localId, PHBridge bridge,
-			BundleContext context);
+	public abstract HueDriverInstance createHueDriverInstance(
+			HueNetwork hueNetwork, ControllableDevice device, String sLocalID,
+			HueGatewayDriverInstance hueGateway, BundleContext context);
 
 	/**
 	 * Registers this driver in the OSGi framework, making its services
@@ -307,8 +313,7 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 	{
 		if (properties != null)
 		{
-			//handle any property here
-			
+			// handle any property here
 
 			// register driver
 			registerHueDeviceDriver();
