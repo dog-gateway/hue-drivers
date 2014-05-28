@@ -340,9 +340,12 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 		Set<HueConnectionListener> listenersToNotify = this.hueBridgeConnectionListeners
 				.get(ipAddress);
 
-		// dispatch the bridge connection event
-		for (HueConnectionListener listener : listenersToNotify)
-			listener.onBridgeConnected(bridge);
+		if (listenersToNotify != null)
+		{
+			// dispatch the bridge connection event
+			for (HueConnectionListener listener : listenersToNotify)
+				listener.onBridgeConnected(bridge);
+		}
 
 	}
 

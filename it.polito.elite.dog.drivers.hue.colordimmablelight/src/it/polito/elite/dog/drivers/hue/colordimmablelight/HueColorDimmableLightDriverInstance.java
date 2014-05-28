@@ -76,6 +76,7 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 	private void initializeStates()
 	{
+		/*
 		//prepare the state
 		// get the bridge
 		PHBridge bridge = this.gateway.getBridge();
@@ -89,7 +90,7 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 		
 		//fill the states
 		
-		
+		*/
 	}
 
 	@Override
