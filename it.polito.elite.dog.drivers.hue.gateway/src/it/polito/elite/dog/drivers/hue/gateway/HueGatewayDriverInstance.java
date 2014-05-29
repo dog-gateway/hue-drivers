@@ -38,9 +38,7 @@ import it.polito.elite.dog.drivers.hue.network.interfaces.HueConnectionListener;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -50,6 +48,7 @@ import org.osgi.service.log.LogService;
 import com.philips.lighting.model.PHBridge;
 import com.philips.lighting.model.PHBridgeResourcesCache;
 import com.philips.lighting.model.PHLight;
+import com.philips.lighting.model.PHLightState;
 
 public class HueGatewayDriverInstance extends HueDriverInstance implements
 		HueBridge, HueConnectionListener
@@ -61,7 +60,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	private DeviceDescriptorFactory descriptorFactory;
 
 	// a set holding the currently known devices
-	private Set<String> knownDevices;
+	private HashMap<String, HueDriverInstance> knownDevices;
 
 	// the drive instance logger
 	private LogHelper logger;
@@ -85,7 +84,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		this.logger = new LogHelper(context);
 
 		// create the set for storing the currently known devices
-		this.knownDevices = new HashSet<String>();
+		this.knownDevices = new HashMap<String, HueDriverInstance>();
 
 		// store the device factory instance
 		this.deviceFactory = deviceFactory;
@@ -160,7 +159,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 				new ConnectionState(new ConnectedStateValue()));
 
 		// log connection
-		this.logger.log(LogService.LOG_INFO,
+		this.logger.log(LogService.LOG_DEBUG,
 				"Connected to the HueBridge located at: " + this.bridgeIp);
 
 		// handle device discovery ...
@@ -186,11 +185,15 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		// handle the bridge status update if needed...
 
 		// trigger device update...
-
-		// handle device discovery ...
-		if (this.discoveryEnabled)
+		List<PHLight> allLights = bridge.getResourceCache().getAllLights();
+		
+		for(PHLight light : allLights)
 		{
-			// TODO: handle discovery
+			//get the attached driver, if available
+			HueDriverInstance driverInstance = this.knownDevices.get(light.getIdentifier());
+			
+			//notify the driver
+			driverInstance.newMessageFromHouse(light.getLastKnownLightState());
 		}
 
 	}
@@ -202,9 +205,9 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	 * 
 	 * @param localId
 	 */
-	public void addDevice(String localId)
+	public void addDevice(String localId, HueDriverInstance driverInstance)
 	{
-		this.knownDevices.add(localId);
+		this.knownDevices.put(localId,driverInstance);
 	}
 
 	/**
@@ -257,7 +260,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 					+ light.getIdentifier() + " type: " + light.getLightType());
 
 			// check if the device is already registered
-			if (!this.knownDevices.contains(light.getIdentifier()))
+			if (!this.knownDevices.keySet().contains(light.getIdentifier()))
 			{
 				// the light is new and a new device should be created in Dog
 				DeviceDescriptor newDevice = this.buildDeviceDescriptor(light);
@@ -368,6 +371,12 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		}
 
 		return descriptor;
+	}
+
+	@Override
+	public void newMessageFromHouse(PHLightState lastKnownLightState)
+	{
+		//intentionally left empty		
 	}
 
 }

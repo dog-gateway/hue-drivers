@@ -239,7 +239,7 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 				device.setDriver(driverInstance);
 				
 				// mark the device as known
-				this.gateway.get().getSpecificGateway(gateway).addDevice(sLocalID);
+				this.gateway.get().getSpecificGateway(gateway).addDevice(sLocalID,driverInstance);
 
 				// store a reference to the connected driver
 				synchronized (this.managedInstances)

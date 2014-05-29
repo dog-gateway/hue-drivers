@@ -18,26 +18,28 @@
  */
 package it.polito.elite.dog.drivers.hue.colordimmablelight;
 
-import java.awt.Color;
-import java.awt.MultipleGradientPaint.ColorSpaceType;
-
-import javax.measure.DecimalMeasure;
-import javax.measure.Measure;
-import javax.measure.unit.Unit;
-
 import it.polito.elite.dog.core.library.model.ControllableDevice;
 import it.polito.elite.dog.core.library.model.DeviceStatus;
 import it.polito.elite.dog.core.library.model.devicecategory.ColorDimmableLight;
+import it.polito.elite.dog.core.library.model.devicecategory.Controllable;
+import it.polito.elite.dog.core.library.model.state.LevelState;
+import it.polito.elite.dog.core.library.model.state.OnOffState;
+import it.polito.elite.dog.core.library.model.statevalue.LevelStateValue;
+import it.polito.elite.dog.core.library.model.statevalue.OffStateValue;
+import it.polito.elite.dog.core.library.model.statevalue.OnStateValue;
 import it.polito.elite.dog.drivers.hue.gateway.HueGatewayDriverInstance;
 import it.polito.elite.dog.drivers.hue.network.HueDriverInstance;
 import it.polito.elite.dog.drivers.hue.network.info.HueInfo;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork;
 
+import javax.measure.DecimalMeasure;
+import javax.measure.Measure;
+import javax.measure.unit.Unit;
+
 import org.osgi.framework.BundleContext;
 
 import com.philips.lighting.model.PHBridge;
 import com.philips.lighting.model.PHLight;
-import com.philips.lighting.model.PHLight.PHLightColorMode;
 import com.philips.lighting.model.PHLightState;
 
 /**
@@ -69,28 +71,29 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 		// store the local id of this lamp
 		this.localId = localId;
-		
+
 		// initialize the state
 		this.initializeStates();
 	}
 
 	private void initializeStates()
 	{
-		/*
-		//prepare the state
-		// get the bridge
-		PHBridge bridge = this.gateway.getBridge();
-		
-		// get this lamp information
-		PHLight light = bridge.getResourceCache().getLights()
-				.get(this.localId);
-		
-		// get that last known state
-		PHLightState lightState = light.getLastKnownLightState();
-		
-		//fill the states
-		
-		*/
+		// prepare the device state map
+		this.currentState = new DeviceStatus(this.device.getDeviceId());
+
+		// prepare the device state
+		// on/off
+		OnOffState onoff = new OnOffState(new OffStateValue());
+
+		// level state
+		LevelState brightnessLevel = new LevelState(new LevelStateValue());
+
+		// add the on/off state
+		this.currentState.setState(OnOffState.class.getSimpleName(), onoff);
+
+		// add the brightnes state
+		this.currentState.setState(LevelState.class.getSimpleName(),
+				brightnessLevel);
 	}
 
 	@Override
@@ -211,8 +214,7 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	@Override
 	public DeviceStatus getState()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return this.currentState;
 	}
 
 	@Override
@@ -250,20 +252,20 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 			// get the light
 			PHLight light = bridge.getResourceCache().getLights()
 					.get(this.localId);
-			
-			//prepare the new lamp state
+
+			// prepare the new lamp state
 			PHLightState newLightState = new PHLightState();
-			
-			//update hue and saturation
+
+			// update hue and saturation
 			newLightState.setHue(hue);
 			newLightState.setSaturation(saturation);
-			
-			//update the real device
+
+			// update the real device
 			bridge.updateLightState(light, newLightState);
-			
-			//notify...
-			
-			//update the status
+
+			// notify...
+
+			// update the status
 			this.updateStatus();
 		}
 	}
@@ -300,12 +302,6 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 				// updated the state on the real device
 				bridge.updateLightState(light, newLightState);
-
-				// notify
-				this.notifyOn();
-
-				// update the status
-				this.updateStatus();
 			}
 		}
 
@@ -357,12 +353,6 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 				// updated the state on the real device
 				bridge.updateLightState(light, newLightState);
-
-				// notify
-				this.notifyOff();
-
-				// update the status
-				this.updateStatus();
 			}
 		}
 
@@ -427,14 +417,47 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	@Override
 	public void updateStatus()
 	{
-		// TODO Auto-generated method stub
-
+		((Controllable) this.device).updateStatus();
 	}
 
 	@Override
 	protected void specificConfiguration()
 	{
-		// TODO Auto-generated method stub
+		// empty
+	}
+
+	@Override
+	public void newMessageFromHouse(PHLightState lastKnownLightState)
+	{
+		// handle state changes
+
+		// on/off
+		if (lastKnownLightState.isOn())
+		{
+			// notify
+			this.notifyOn();
+
+			// update the on/off state
+			OnOffState onoff = new OnOffState(new OnStateValue());
+			this.currentState.setState(OnOffState.class.getSimpleName(), onoff);
+
+		} else
+		{
+			// notify
+			this.notifyOff();
+
+			// update the on/off state
+			OnOffState onoff = new OnOffState(new OffStateValue());
+			this.currentState.setState(OnOffState.class.getSimpleName(), onoff);
+		}
+
+		// level state
+		this.currentState.getState(LevelState.class.getSimpleName())
+				.getCurrentStateValue()[0].setValue(DecimalMeasure.valueOf(
+				lastKnownLightState.getBrightness(), Unit.ONE));
+
+		// update the status
+		this.updateStatus();
 
 	}
 

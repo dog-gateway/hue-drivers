@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.philips.lighting.model.PHBridge;
+import com.philips.lighting.model.PHLightState;
 
 /**
  * @author bonino
@@ -115,6 +116,8 @@ public abstract class HueDriverInstance
 	 */
 	protected abstract void specificConfiguration();
 
+	public abstract void newMessageFromHouse(PHLightState lastKnownLightState);
+	
 	/***
 	 * Fills the inner data structures depending on the specific device
 	 * configuration parameters, extracted from the device instance associated
