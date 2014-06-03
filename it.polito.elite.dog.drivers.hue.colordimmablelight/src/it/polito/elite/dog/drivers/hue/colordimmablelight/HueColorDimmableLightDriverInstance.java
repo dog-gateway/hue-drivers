@@ -22,18 +22,27 @@ import it.polito.elite.dog.core.library.model.ControllableDevice;
 import it.polito.elite.dog.core.library.model.DeviceStatus;
 import it.polito.elite.dog.core.library.model.devicecategory.ColorDimmableLight;
 import it.polito.elite.dog.core.library.model.devicecategory.Controllable;
+import it.polito.elite.dog.core.library.model.state.ColorStateHSB;
 import it.polito.elite.dog.core.library.model.state.LevelState;
 import it.polito.elite.dog.core.library.model.state.OnOffState;
+import it.polito.elite.dog.core.library.model.statevalue.BrightnessStateValue;
+import it.polito.elite.dog.core.library.model.statevalue.HueStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.LevelStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.OffStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.OnStateValue;
+import it.polito.elite.dog.core.library.model.statevalue.SaturationStateValue;
+import it.polito.elite.dog.core.library.model.statevalue.StateValue;
 import it.polito.elite.dog.drivers.hue.gateway.HueGatewayDriverInstance;
 import it.polito.elite.dog.drivers.hue.network.HueDriverInstance;
 import it.polito.elite.dog.drivers.hue.network.info.HueInfo;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.measure.DecimalMeasure;
 import javax.measure.Measure;
+import javax.measure.quantity.Dimensionless;
 import javax.measure.unit.Unit;
 
 import org.osgi.framework.BundleContext;
@@ -55,8 +64,14 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	// store the gateway instance
 	private HueGatewayDriverInstance gateway;
 
-	// store the step percentage, defualt 5%;
+	// store the step percentage, default 5%;
 	private int stepPercentage = 5;
+
+	// the set of scenes to which the device belongs
+	private Set<Integer> scenes;
+
+	// the set of groups to which the device belongs
+	private Set<Integer> groups;
 
 	public HueColorDimmableLightDriverInstance(HueNetwork hueNetwork,
 			ControllableDevice device, String localId,
@@ -71,6 +86,10 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 		// store the local id of this lamp
 		this.localId = localId;
+
+		// initialize the scenes and groups sets
+		this.scenes = new HashSet<Integer>();
+		this.groups = new HashSet<Integer>();
 
 		// initialize the state
 		this.initializeStates();
@@ -87,6 +106,9 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 		// level state
 		LevelState brightnessLevel = new LevelState(new LevelStateValue());
+		
+		// HSB state
+		ColorStateHSB colorState =  new ColorStateHSB(new HueStateValue(), new SaturationStateValue(), new BrightnessStateValue());
 
 		// add the on/off state
 		this.currentState.setState(OnOffState.class.getSimpleName(), onoff);
@@ -94,6 +116,10 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 		// add the brightnes state
 		this.currentState.setState(LevelState.class.getSimpleName(),
 				brightnessLevel);
+		
+		// add the HSB state
+		this.currentState.setState(ColorStateHSB.class.getSimpleName(),
+				colorState);
 	}
 
 	@Override
@@ -220,15 +246,15 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	@Override
 	public void storeScene(Integer sceneNumber)
 	{
-		// TODO Auto-generated method stub
-
+		// add the scene
+		this.scenes.add(sceneNumber);
 	}
 
 	@Override
 	public void deleteScene(Integer sceneNumber)
 	{
-		// TODO Auto-generated method stub
-
+		// remove the scene
+		this.scenes.remove(sceneNumber);
 	}
 
 	@Override
@@ -236,38 +262,6 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	{
 		// TODO Auto-generated method stub
 
-	}
-
-	public void setColor(int hue, int saturation)
-	{
-		// get the bridge object (asks it to the network driver to get the most
-		// updated version) TODO: check if the received reference is kept up to
-		// date
-		PHBridge bridge = this.gateway.getBridge();
-
-		// check not null
-		if (bridge != null)
-		{
-
-			// get the light
-			PHLight light = bridge.getResourceCache().getLights()
-					.get(this.localId);
-
-			// prepare the new lamp state
-			PHLightState newLightState = new PHLightState();
-
-			// update hue and saturation
-			newLightState.setHue(hue);
-			newLightState.setSaturation(saturation);
-
-			// update the real device
-			bridge.updateLightState(light, newLightState);
-
-			// notify...
-
-			// update the status
-			this.updateStatus();
-		}
 	}
 
 	@Override
@@ -310,15 +304,15 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	@Override
 	public void deleteGroup(Integer groupID)
 	{
-		// TODO Auto-generated method stub
-
+		// delete the group
+		this.groups.remove(groupID);
 	}
 
 	@Override
 	public void storeGroup(Integer groupID)
 	{
-		// TODO Auto-generated method stub
-
+		// add the group
+		this.groups.add(groupID);
 	}
 
 	@Override
@@ -361,57 +355,37 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	@Override
 	public void notifyStoredScene(Integer sceneNumber)
 	{
-		// TODO Auto-generated method stub
-
+		((ColorDimmableLight) this.device).notifyStoredScene(sceneNumber);
 	}
 
 	@Override
 	public void notifyDeletedScene(Integer sceneNumber)
 	{
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void notifyChangedColor(String colorRGB)
-	{
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void notifyJoinedGroup(Integer groupNumber)
-	{
-		// TODO Auto-generated method stub
-
+		((ColorDimmableLight) this.device).notifyDeletedScene(sceneNumber);
 	}
 
 	@Override
 	public void notifyOn()
 	{
-		// TODO Auto-generated method stub
-
+		((ColorDimmableLight) this.device).notifyOn();
 	}
 
 	@Override
 	public void notifyChangedLevel(Measure<?, ?> newLevel)
 	{
-		// TODO Auto-generated method stub
-
+		((ColorDimmableLight) this.device).notifyChangedLevel(newLevel);
 	}
 
 	@Override
 	public void notifyOff()
 	{
-		// TODO Auto-generated method stub
-
+		((ColorDimmableLight) this.device).notifyOff();
 	}
 
 	@Override
 	public void notifyLeftGroup(Integer groupNumber)
 	{
-		// TODO Auto-generated method stub
-
+		((ColorDimmableLight) this.device).notifyLeftGroup(groupNumber);
 	}
 
 	@Override
@@ -450,15 +424,105 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 			OnOffState onoff = new OnOffState(new OffStateValue());
 			this.currentState.setState(OnOffState.class.getSimpleName(), onoff);
 		}
+	
+		// handle HSB state
+		StateValue stateValues[] = this.currentState.getState(ColorStateHSB.class.getSimpleName()).getCurrentStateValue();
+		
+		for(StateValue value : stateValues)
+		{
+			if(value.getName().equals(BrightnessStateValue.class.getSimpleName()))
+			{
+				value.setValue(lastKnownLightState.getBrightness());
+			}
+			else if(value.getName().equals(SaturationStateValue.class.getSimpleName()))
+			{
+				value.setValue(lastKnownLightState.getSaturation());
+			}
+			else if(value.getName().equals(HueStateValue.class.getSimpleName()))
+			{
+				value.setValue(lastKnownLightState.getHue());
+			}
+		}
+		
+		// handle HSB notification 
+				this.notifyChangedColorHSB(lastKnownLightState.getSaturation(),
+						lastKnownLightState.getBrightness(),
+						lastKnownLightState.getHue());
 
-		// level state
+		// handle level state
+		Measure<Integer, Dimensionless> level = DecimalMeasure.valueOf(
+				lastKnownLightState.getBrightness(), Unit.ONE);
+		
 		this.currentState.getState(LevelState.class.getSimpleName())
-				.getCurrentStateValue()[0].setValue(DecimalMeasure.valueOf(
-				lastKnownLightState.getBrightness(), Unit.ONE));
+				.getCurrentStateValue()[0].setValue(level);
+		
+		// handle level notification
+		this.notifyChangedLevel(level);
 
 		// update the status
 		this.updateStatus();
 
 	}
 
+	@Override
+	public void setColorRGB(Integer red, Integer blue, Integer green)
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void setColorHSB(Integer saturation, Integer brightness, Integer hue)
+	{
+		// get the bridge object (asks it to the network driver to get the most
+		// updated version) TODO: check if the received reference is kept up to
+		// date
+		PHBridge bridge = this.gateway.getBridge();
+
+		// check not null
+		if (bridge != null)
+		{
+
+			// get the light
+			PHLight light = bridge.getResourceCache().getLights()
+					.get(this.localId);
+
+			// prepare the new lamp state
+			PHLightState newLightState = new PHLightState();
+
+			// update hue and saturation
+			newLightState.setHue(hue);
+			newLightState.setSaturation(saturation);
+			newLightState.setBrightness(brightness);
+
+			// update the real device
+			bridge.updateLightState(light, newLightState);
+
+			// notify...
+
+			// update the status
+			this.updateStatus();
+
+		}
+	}
+
+	@Override
+	public void notifyChangedColorRGB(Integer red, Integer blue, Integer green)
+	{
+		notifyChangedColorRGB(red, blue, green);
+	}
+
+	@Override
+	public void notifyChangedColorHSB(Integer saturation, Integer brightness,
+			Integer hue)
+	{
+		((ColorDimmableLight) this.device).notifyChangedColorHSB(saturation,
+				brightness, hue);
+	}
+
+	@Override
+	public void notifyJoinedGroup(Integer groupNumber)
+	{
+		((ColorDimmableLight) this.device).notifyJoinedGroup(groupNumber);
+	}
 }

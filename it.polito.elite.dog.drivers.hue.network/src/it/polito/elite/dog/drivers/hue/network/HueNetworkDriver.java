@@ -353,7 +353,7 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 	public void onError(int arg0, String arg1)
 	{
 		// TODO: handle connection errors
-		this.logger.log(LogService.LOG_ERROR, "Error:" + arg1);
+		this.logger.log(LogService.LOG_ERROR, "Error:" + arg1+":"+arg0);
 	}
 
 }
