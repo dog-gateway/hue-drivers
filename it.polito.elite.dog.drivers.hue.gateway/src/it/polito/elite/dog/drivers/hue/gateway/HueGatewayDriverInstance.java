@@ -134,14 +134,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	{
 		return this.currentState;
 	}
-
-	@Override
-	public void link()
-	{
-		// TODO Auto-generated method stub
-
-	}
-
+	
 	@Override
 	public void updateStatus()
 	{
