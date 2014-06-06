@@ -63,4 +63,9 @@ public interface HueNetwork
 	 * @param listener
 	 */
 	public void connectToBridge(String bridgeIp, HueConnectionListener listener);
+	
+	/**
+	 * Starts the bridge discovery process using UPnP, Portal, and search by Ip
+	 */
+	public void discoverNewBridges();
 }

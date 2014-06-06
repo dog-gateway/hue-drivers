@@ -162,22 +162,17 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 	{
 		// initialize the HUE sdk listener
 		this.sdk.getNotificationManager().registerSDKListener(this);
-
-		// debug
-		this.logger.log(LogService.LOG_DEBUG,
-				"Performing initial bridge search...");
-
-		// perform the initial bridge search
-		this.searchBridges();
 	}
 
 	/**
 	 * Performs a search for new bridges, using UPnP
 	 */
-	private void searchBridges()
+	public void discoverNewBridges()
 	{
+		//get the bridge search manager
 		PHBridgeSearchManager sm = (PHBridgeSearchManager) this.sdk
 				.getSDKService(PHHueSDK.SEARCH_BRIDGE);
+		
 		// Start the UPNP Searching of local bridges.
 		sm.search(true, true, true);
 	}
@@ -243,11 +238,18 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 	}
 
 	@Override
-	public void onAccessPointsFound(List<PHAccessPoint> arg0)
+	public void onAccessPointsFound(List<PHAccessPoint> accessPoints)
 	{
-		// TODO: handle bridge discovery work flow here
+		//debug log
 		this.logger.log(LogService.LOG_DEBUG, "Detected new bridges...\n"
-				+ arg0);
+				+ accessPoints);
+		
+		//get the list of registered listeners, if any
+		for(HueBridgeDiscoveryListener listener : this.hueBridgeDiscoveryListeners)
+		{
+			//notify the listener
+			listener.onAccessPointsFound(accessPoints);
+		}
 
 	}
 
@@ -282,9 +284,13 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 		Set<HueConnectionListener> listenersToNotify = this.hueBridgeConnectionListeners
 				.get(ipAddress);
 
-		// dispatch the bridge connection event
-		for (HueConnectionListener listener : listenersToNotify)
-			listener.onBridgeConnected(bridge);
+		// check not null
+		if (listenersToNotify != null)
+		{
+			// dispatch the bridge connection event
+			for (HueConnectionListener listener : listenersToNotify)
+				listener.onBridgeConnected(bridge);
+		}
 	}
 
 	@Override
@@ -300,10 +306,13 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 		Set<HueConnectionListener> listenersToNotify = this.hueBridgeConnectionListeners
 				.get(ipAddress);
 
-		// dispatch the bridge connection event
-		for (HueConnectionListener listener : listenersToNotify)
-			listener.onCacheUpdated(flag, bridge);
-
+		// check not null
+		if (listenersToNotify != null)
+		{
+			// dispatch the bridge connection event
+			for (HueConnectionListener listener : listenersToNotify)
+				listener.onCacheUpdated(flag, bridge);
+		}
 	}
 
 	@Override
@@ -320,9 +329,13 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 		Set<HueConnectionListener> listenersToNotify = this.hueBridgeConnectionListeners
 				.get(ipAddress);
 
-		for (HueConnectionListener listener : listenersToNotify)
-			listener.onBridgeDisconnected();
-
+		// check not null
+		if (listenersToNotify != null)
+		{
+			// call disconnection handler for each listener
+			for (HueConnectionListener listener : listenersToNotify)
+				listener.onBridgeDisconnected();
+		}
 	}
 
 	@Override
@@ -353,7 +366,7 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 	public void onError(int arg0, String arg1)
 	{
 		// TODO: handle connection errors
-		this.logger.log(LogService.LOG_ERROR, "Error:" + arg1+":"+arg0);
+		this.logger.log(LogService.LOG_ERROR, "Error:" + arg1 + ":" + arg0);
 	}
 
 }

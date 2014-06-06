@@ -18,11 +18,21 @@
  */
 package it.polito.elite.dog.drivers.hue.network.interfaces;
 
+import java.util.List;
+
+import com.philips.lighting.hue.sdk.PHAccessPoint;
+
 /**
  * @author bonino
- *
+ * 
  */
 public interface HueBridgeDiscoveryListener
 {
-
+	/**
+	 * Called when one or more hue bridges have been found
+	 * 
+	 * @param the
+	 *            {@link List}<{@link PHAccessPoint}> of found bridges.
+	 */
+	public void onAccessPointsFound(List<PHAccessPoint> arg0);
 }

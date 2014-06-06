@@ -13,7 +13,8 @@ Import-Package: it.polito.elite.dog.core.library.model;version="1.0.0",
  it.polito.elite.dog.core.library.util;version="1.0.0",
  org.osgi.framework,
  org.osgi.service.log;version="1.3.0"
-Export-Package: com.philips.lighting.model,
+Export-Package: com.philips.lighting.hue.sdk,
+ com.philips.lighting.model,
  it.polito.elite.dog.drivers.hue.network,
  it.polito.elite.dog.drivers.hue.network.info,
  it.polito.elite.dog.drivers.hue.network.interfaces

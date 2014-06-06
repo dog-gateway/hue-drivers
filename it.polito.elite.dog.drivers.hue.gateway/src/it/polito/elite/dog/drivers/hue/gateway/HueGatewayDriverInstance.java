@@ -29,8 +29,10 @@ import it.polito.elite.dog.core.library.model.devicecategory.DimmableLight;
 import it.polito.elite.dog.core.library.model.devicecategory.HueBridge;
 import it.polito.elite.dog.core.library.model.devicecategory.OnOffLight;
 import it.polito.elite.dog.core.library.model.state.ConnectionState;
+import it.polito.elite.dog.core.library.model.state.PushLinkAuthenticationState;
 import it.polito.elite.dog.core.library.model.statevalue.ConnectedStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.DisconnectedStateValue;
+import it.polito.elite.dog.core.library.model.statevalue.NeedingAuthenticationStateValue;
 import it.polito.elite.dog.core.library.util.LogHelper;
 import it.polito.elite.dog.drivers.hue.network.HueDriverInstance;
 import it.polito.elite.dog.drivers.hue.network.info.HueInfo;
@@ -134,11 +136,39 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	{
 		return this.currentState;
 	}
-	
+
 	@Override
 	public void updateStatus()
 	{
 		((Controllable) this.device).updateStatus();
+	}
+
+	@Override
+	public void stopPushLinkAuth()
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void startPushLinkAuth()
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void notifyDeactivatedPushLinkAuth()
+	{
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void notifyActivatedPushLinkAuth()
+	{
+		// TODO Auto-generated method stub
+
 	}
 
 	@Override
@@ -166,6 +196,10 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		// remove the reference to the hue bridge
 		this.hueBridge = null;
 
+		// update the device state
+		this.currentState.setState(ConnectionState.class.getSimpleName(),
+				new ConnectionState(new DisconnectedStateValue()));
+
 		// log disconnection
 		this.logger.log(LogService.LOG_INFO,
 				"Disconnected from the HueBridge located at: " + this.bridgeIp);
@@ -179,13 +213,14 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 
 		// trigger device update...
 		List<PHLight> allLights = bridge.getResourceCache().getAllLights();
-		
-		for(PHLight light : allLights)
+
+		for (PHLight light : allLights)
 		{
-			//get the attached driver, if available
-			HueDriverInstance driverInstance = this.knownDevices.get(light.getIdentifier());
-			
-			//notify the driver
+			// get the attached driver, if available
+			HueDriverInstance driverInstance = this.knownDevices.get(light
+					.getIdentifier());
+
+			// notify the driver
 			driverInstance.newMessageFromHouse(light.getLastKnownLightState());
 		}
 
@@ -200,7 +235,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	 */
 	public void addDevice(String localId, HueDriverInstance driverInstance)
 	{
-		this.knownDevices.put(localId,driverInstance);
+		this.knownDevices.put(localId, driverInstance);
 	}
 
 	/**
@@ -227,6 +262,11 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		// initialize the state
 		this.currentState.setState(ConnectionState.class.getSimpleName(),
 				new ConnectionState(new DisconnectedStateValue()));
+
+		// set the push-link authetication status at idle
+		this.currentState.setState(PushLinkAuthenticationState.class
+				.getSimpleName(), new PushLinkAuthenticationState(
+				new NeedingAuthenticationStateValue()));
 	}
 
 	/**
@@ -369,7 +409,7 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	@Override
 	public void newMessageFromHouse(PHLightState lastKnownLightState)
 	{
-		//intentionally left empty		
+		// intentionally left empty
 	}
 
 }
