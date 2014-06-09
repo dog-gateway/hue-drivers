@@ -23,6 +23,8 @@ import it.polito.elite.dog.core.library.model.ControllableDevice;
 import it.polito.elite.dog.core.library.model.DeviceCostants;
 import it.polito.elite.dog.core.library.model.devicecategory.HueBridge;
 import it.polito.elite.dog.core.library.util.LogHelper;
+import it.polito.elite.dog.drivers.hue.huemanager.HueManagerDriver;
+import it.polito.elite.dog.drivers.hue.huemanager.HueManagerDriverInstance;
 import it.polito.elite.dog.drivers.hue.network.info.HueInfo;
 import it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork;
 
@@ -62,6 +64,9 @@ public class HueGatewayDriver implements Driver, ManagedService
 	// a reference to the device factory service used to handle run-time
 	// creation of devices in dog.
 	private AtomicReference<DeviceFactory> deviceFactory;
+	
+	// a reference to the hue manager driver
+	private AtomicReference<HueManagerDriver> hueManagerDriver;
 
 	// the registration object needed to handle the life span of this bundle in
 	// the OSGi framework (it is a ServiceRegistration object used by the
@@ -196,6 +201,26 @@ public class HueGatewayDriver implements Driver, ManagedService
 			// unregisters this driver from the OSGi framework
 			unRegister();
 	}
+	
+	/**
+	 * 
+	 * @param networkDriver
+	 */
+	public void addedHueManagerDriver(HueManagerDriver hueManagerDriver)
+	{
+		this.hueManagerDriver.set(hueManagerDriver);
+	}
+
+	/**
+	 * 
+	 * @param networkDriver
+	 */
+	public void removedHueManagerDriver(HueManagerDriver hueManagerDriver)
+	{
+		if (this.hueManagerDriver.compareAndSet(hueManagerDriver, null))
+			// unregisters this driver from the OSGi framework
+			unRegister();
+	}
 
 	@SuppressWarnings("rawtypes")
 	@Override
@@ -280,6 +305,15 @@ public class HueGatewayDriver implements Driver, ManagedService
 								connectedGateways.size());
 
 						this.regDriver.setProperties(propDriver);
+						
+						//---- avoid gateway discovery by the hue manager singleton
+						
+						//get the only manager instance
+						HueManagerDriverInstance manager = this.hueManagerDriver.get().getTheInstance();
+						
+						//if not null
+						if(manager!=null)
+							manager.addGateway(gatewayAddress);
 					}
 				}
 			}

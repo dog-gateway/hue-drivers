@@ -76,6 +76,15 @@ public class HueManagerDriver implements Driver, ManagedService
 	// properties, or to unregister the service).
 	private ServiceRegistration<?> regDriver;
 
+	// registration object needed to publish the services offered by this hue
+	// manager driver
+	// TODO: define a proper service interface and register the interface
+	// instead of the class
+	private ServiceRegistration<?> regHueManager;
+	
+	//the only manager device
+	private HueManagerDriverInstance theInstance;
+
 	/**
 	 * Class constructor, initializes inner data structures.
 	 */
@@ -127,6 +136,10 @@ public class HueManagerDriver implements Driver, ManagedService
 
 			this.regDriver = this.context.registerService(
 					Driver.class.getName(), this, propDriver);
+
+			// register the hue manager service
+			this.regHueManager = this.context.registerService(
+					HueManagerDriver.class.getName(), this, null);
 		}
 	}
 
@@ -140,6 +153,13 @@ public class HueManagerDriver implements Driver, ManagedService
 		{
 			this.regDriver.unregister();
 			this.regDriver = null;
+		}
+
+		// un-register the manager service
+		if (this.regHueManager != null)
+		{
+			this.regHueManager.unregister();
+			this.regHueManager = null;
 		}
 	}
 
@@ -222,7 +242,7 @@ public class HueManagerDriver implements Driver, ManagedService
 		}
 		return matchValue;
 	}
-	
+
 	@SuppressWarnings("rawtypes")
 	@Override
 	public String attach(ServiceReference reference) throws Exception
@@ -233,14 +253,15 @@ public class HueManagerDriver implements Driver, ManagedService
 			@SuppressWarnings("unchecked")
 			ControllableDevice device = (ControllableDevice) this.context
 					.getService(reference);
-			
+
 			// create a HueManagerDriver instance (it is a singleton)
-			HueManagerDriverInstance driverInstance = new HueManagerDriverInstance(this.network.get(), this.deviceFactory.get(),
-					device, this.context);
-			
+			this.theInstance = new HueManagerDriverInstance(
+					this.network.get(), this.deviceFactory.get(), device,
+					this.context);
+
 			// associate device and driver
-			device.setDriver(driverInstance);
-			
+			device.setDriver(this.theInstance);
+
 		}
 		//
 		return null;
@@ -254,5 +275,23 @@ public class HueManagerDriver implements Driver, ManagedService
 		this.logger.log(LogService.LOG_DEBUG, "updated");
 
 	}
+
+	/**
+	 * @return the theInstance
+	 */
+	public HueManagerDriverInstance getTheInstance()
+	{
+		return theInstance;
+	}
+
+	/**
+	 * @param theInstance the theInstance to set
+	 */
+	public void setTheInstance(HueManagerDriverInstance theInstance)
+	{
+		this.theInstance = theInstance;
+	}
+	
+	
 
 }

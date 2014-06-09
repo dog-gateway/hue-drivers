@@ -28,4 +28,9 @@ public class HueInfo extends ConfigurationConstants
 	 * The maximum brightness of a Hue lamp
 	 */
 	public static final int MAX_BRIGHTNESS = 255;
+	
+	/**
+	 * The default localId for gateways
+	 */
+	public static final String GATEWAY_DEFAULT_LOCAL_ID = "1";
 }

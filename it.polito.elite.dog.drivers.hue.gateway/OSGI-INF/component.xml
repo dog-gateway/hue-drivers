@@ -7,4 +7,5 @@
    </service>
    <reference bind="addedNetworkDriver" cardinality="1..1" interface="it.polito.elite.dog.drivers.hue.network.interfaces.HueNetwork" name="HueNetworkDriver" policy="dynamic" unbind="removedNetworkDriver"/>
    <reference bind="addedDeviceFactory" cardinality="1..1" interface="it.polito.elite.dog.core.devicefactory.api.DeviceFactory" name="DeviceFactory" policy="dynamic" unbind="removedDeviceFactory"/>
+   <reference bind="addedHueManagerDriver" cardinality="1..1" interface="it.polito.elite.dog.drivers.hue.huemanager.HueManagerDriver" name="HueManagerDriver" policy="dynamic" unbind="removedHueManagerDriver"/>
 </scr:component>

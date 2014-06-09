@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<dhc:dogHomeConfiguration xmlns:dhc="http://elite.polito.it/dogHomeConfiguration">
+	<dhc:controllables>
+		<dhc:device class="HueBridge" id="$name"
+			domoticSystem="PhilipsHue">
+			<dhc:description>$description
+			</dhc:description>
+			<dhc:isIn>$location</dhc:isIn>
+			<dhc:param value="$localId" name="localId" type="network" />
+			<dhc:param name="IPAddress" value="$IPAddress" type="network" />
+			<dhc:controlFunctionality class="PushLinkFunctionality">
+				<dhc:commands>
+					<dhc:command id="StartPushLinkAuthenticationCommand_$name" name="StartPushLinkAuthenticationCommand_$name"
+						class="StartPushLinkAuthenticationCommand">
+						<dhc:param value="startPushLinkAuth" name="realCommandName" />
+					</dhc:command>
+					<dhc:command id="StopPushLinkAuthenticationCommand_$name" name="StopPushLinkAuthenticationCommand_$name"
+						class="StopPushLinkAuthenticationCommand">
+						<dhc:param value="stopPushLinkAuth" name="realCommandName" />
+					</dhc:command>
+				</dhc:commands>
+			</dhc:controlFunctionality>
+			<dhc:notificationFunctionality class="PushLinkNotificationFunctionality">
+				<dhc:notifications>
+					<dhc:notification id="PushLinkAuthenticationActiveNotification_$name" class="PushLinkAuthenticationActiveNotification">
+						<dhc:param name="nParams" value="0" />
+						<dhc:param value="activatedPushLinkAuth" name="notificationName" />
+					</dhc:notification>
+					<dhc:notification id="PushLinkAuthenticationIdleNotificatio_$name"
+						class="OffNotification">
+						<dhc:param name="nParams" value="0" />
+						<dhc:param value="deactivatedPushLinkAuth" name="notificationName" />
+					</dhc:notification>
+				</dhc:notifications>
+			</dhc:notificationFunctionality>
+			<dhc:state class="ConnectionState">
+				<dhc:statevalues>
+					<dhc:statevalue name="connected" class="ConnectedStateValue" />
+					<dhc:statevalue name="disconnected" class="DisconnectedStateValue" />
+				</dhc:statevalues>
+			</dhc:state>
+			<dhc:state class="PushLinkAuthenticationState">
+				<dhc:statevalues>
+					<dhc:statevalue name="authenticating" class="ActivePushLinkAuthenticationStateValue" />
+					<dhc:statevalue name="authenticated" class="AuthenticatedStateValue" />
+					<dhc:statevalue name="needsAuthentication" class="NeedingAuthenticationStateValue" />
+				</dhc:statevalues>
+			</dhc:state>
+		</dhc:device>
+	</dhc:controllables>
+</dhc:dogHomeConfiguration>
