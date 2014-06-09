@@ -68,4 +68,9 @@ public interface HueNetwork
 	 * Starts the bridge discovery process using UPnP, Portal, and search by Ip
 	 */
 	public void discoverNewBridges();
+	
+	/**
+	 * Starts the push-link authentication process
+	 */
+	public void startPushLinkAuthentication(String bridgeIp);
 }

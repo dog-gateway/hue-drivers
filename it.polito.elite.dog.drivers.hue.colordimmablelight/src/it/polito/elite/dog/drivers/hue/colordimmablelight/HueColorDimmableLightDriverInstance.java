@@ -52,6 +52,8 @@ import com.philips.lighting.model.PHLight;
 import com.philips.lighting.model.PHLightState;
 
 /**
+ * A driver instance for handling Philips Hue colored lights.
+ * 
  * @author bonino
  * 
  */
@@ -106,9 +108,10 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 		// level state
 		LevelState brightnessLevel = new LevelState(new LevelStateValue());
-		
+
 		// HSB state
-		ColorStateHSB colorState =  new ColorStateHSB(new HueStateValue(), new SaturationStateValue(), new BrightnessStateValue());
+		ColorStateHSB colorState = new ColorStateHSB(new HueStateValue(),
+				new SaturationStateValue(), new BrightnessStateValue());
 
 		// add the on/off state
 		this.currentState.setState(OnOffState.class.getSimpleName(), onoff);
@@ -116,7 +119,7 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 		// add the brightnes state
 		this.currentState.setState(LevelState.class.getSimpleName(),
 				brightnessLevel);
-		
+
 		// add the HSB state
 		this.currentState.setState(ColorStateHSB.class.getSimpleName(),
 				colorState);
@@ -424,38 +427,40 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 			OnOffState onoff = new OnOffState(new OffStateValue());
 			this.currentState.setState(OnOffState.class.getSimpleName(), onoff);
 		}
-	
+
 		// handle HSB state
-		StateValue stateValues[] = this.currentState.getState(ColorStateHSB.class.getSimpleName()).getCurrentStateValue();
-		
-		for(StateValue value : stateValues)
+		StateValue stateValues[] = this.currentState.getState(
+				ColorStateHSB.class.getSimpleName()).getCurrentStateValue();
+
+		for (StateValue value : stateValues)
 		{
-			if(value.getName().equals(BrightnessStateValue.class.getSimpleName()))
+			if (value.getName().equals(
+					BrightnessStateValue.class.getSimpleName()))
 			{
 				value.setValue(lastKnownLightState.getBrightness());
-			}
-			else if(value.getName().equals(SaturationStateValue.class.getSimpleName()))
+			} else if (value.getName().equals(
+					SaturationStateValue.class.getSimpleName()))
 			{
 				value.setValue(lastKnownLightState.getSaturation());
-			}
-			else if(value.getName().equals(HueStateValue.class.getSimpleName()))
+			} else if (value.getName().equals(
+					HueStateValue.class.getSimpleName()))
 			{
 				value.setValue(lastKnownLightState.getHue());
 			}
 		}
-		
-		// handle HSB notification 
-				this.notifyChangedColorHSB(lastKnownLightState.getSaturation(),
-						lastKnownLightState.getBrightness(),
-						lastKnownLightState.getHue());
+
+		// handle HSB notification
+		this.notifyChangedColorHSB(lastKnownLightState.getSaturation(),
+				lastKnownLightState.getBrightness(),
+				lastKnownLightState.getHue());
 
 		// handle level state
 		Measure<Integer, Dimensionless> level = DecimalMeasure.valueOf(
 				lastKnownLightState.getBrightness(), Unit.ONE);
-		
+
 		this.currentState.getState(LevelState.class.getSimpleName())
 				.getCurrentStateValue()[0].setValue(level);
-		
+
 		// handle level notification
 		this.notifyChangedLevel(level);
 

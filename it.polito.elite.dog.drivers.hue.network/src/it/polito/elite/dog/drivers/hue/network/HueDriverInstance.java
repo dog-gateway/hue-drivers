@@ -97,17 +97,14 @@ public abstract class HueDriverInstance
 		return bridgeIp;
 	}
 
-
-
 	/**
-	 * @param bridgeIp the bridgeIp to set
+	 * @param bridgeIp
+	 *            the bridgeIp to set
 	 */
 	public void setBridgeIp(String bridgeIp)
 	{
 		this.bridgeIp = bridgeIp;
 	}
-
-
 
 	/**
 	 * Extending classes might implement this method to provide driver-specific
@@ -116,8 +113,16 @@ public abstract class HueDriverInstance
 	 */
 	protected abstract void specificConfiguration();
 
+	/**
+	 * Called whenever a new state / information about a given device (Light) is
+	 * received from the network level.
+	 * 
+	 * @param lastKnownLightState
+	 *            A {@link PHLightState} instance representing the most updated
+	 *            state of the device.
+	 */
 	public abstract void newMessageFromHouse(PHLightState lastKnownLightState);
-	
+
 	/***
 	 * Fills the inner data structures depending on the specific device
 	 * configuration parameters, extracted from the device instance associated

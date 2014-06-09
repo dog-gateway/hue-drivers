@@ -85,6 +85,9 @@ public class HueManagerDriverInstance extends HueDriverInstance implements
 		this.network.addHueBridgeDiscoveryListener(this);
 	}
 
+	/**
+	 * Performs the initial set-up of the device state
+	 */
 	private void initializeStates()
 	{
 		// set the discovery state at idle
@@ -192,6 +195,13 @@ public class HueManagerDriverInstance extends HueDriverInstance implements
 
 	}
 
+	/**
+	 * Builds a complete {@link DeviceDescriptor} instance representing the
+	 * given Hue bridge (as a {@link PHAccessPoint} instance).
+	 * 
+	 * @param accessPoint The access point to describe.
+	 * @return The corresponding device descriptor.
+	 */
 	private DeviceDescriptor buildGatewayDescriptor(PHAccessPoint accessPoint)
 	{
 		// the device descriptor to return

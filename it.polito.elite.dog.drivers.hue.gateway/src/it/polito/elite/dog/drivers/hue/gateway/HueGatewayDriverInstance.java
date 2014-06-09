@@ -1,5 +1,5 @@
 /*
- * Dog 2.0 - Hue Network Driver
+ * Dog 2.0 - Hue Gateway Driver
  * 
  * 
  * Copyright 2014 Dario Bonino 
@@ -30,6 +30,8 @@ import it.polito.elite.dog.core.library.model.devicecategory.HueBridge;
 import it.polito.elite.dog.core.library.model.devicecategory.OnOffLight;
 import it.polito.elite.dog.core.library.model.state.ConnectionState;
 import it.polito.elite.dog.core.library.model.state.PushLinkAuthenticationState;
+import it.polito.elite.dog.core.library.model.statevalue.ActivePushLinkAuthenticationStateValue;
+import it.polito.elite.dog.core.library.model.statevalue.AuthenticatedStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.ConnectedStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.DisconnectedStateValue;
 import it.polito.elite.dog.core.library.model.statevalue.NeedingAuthenticationStateValue;
@@ -71,6 +73,9 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	// TODO: find a more "OSGi" way of performing this task (i.e., waiting for
 	// complete device attachment before starting discovery)
 	private int deviceDiscoveryDelayMillis = 30000;
+	private int pushLinkTimeoutMillis = 30000;
+
+	Timer pushLinkAuthenticationTimer;
 
 	// the device discovery enabled flag
 	private boolean discoveryEnabled = false;
@@ -123,9 +128,15 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 			{
 				discoveryEnabled = true;
 			}
-		}, deviceDiscoveryDelayMillis);
+		}, this.deviceDiscoveryDelayMillis);
 	}
 
+	/**
+	 * Provides the {@link PHBridge} instance representing the Hue bridge
+	 * managed by this driver instance.
+	 * 
+	 * @return
+	 */
 	public PHBridge getBridge()
 	{
 		return this.hueBridge;
@@ -146,29 +157,87 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 	@Override
 	public void stopPushLinkAuth()
 	{
-		// TODO Auto-generated method stub
+		// get the current authentication state
+		PushLinkAuthenticationState currentPushLinkAuthState = (PushLinkAuthenticationState) this.currentState
+				.getState(PushLinkAuthenticationState.class.getSimpleName());
+
+		// if when called it is still in the push-link authentication stata,
+		// then turns back to the needing authentication state.
+		if ((currentPushLinkAuthState.getCurrentStateValue()[0].getName()
+				.equals(ActivePushLinkAuthenticationStateValue.class
+						.getSimpleName())))
+		{
+			// check that the authentication timer is not null, i.e., possibly
+			// active
+			if (this.pushLinkAuthenticationTimer != null)
+				// stop the timer
+				this.pushLinkAuthenticationTimer.cancel();
+
+			// get the current connection state
+			ConnectionState currentConnectionState = (ConnectionState) this.currentState
+					.getState(ConnectionState.class.getSimpleName());
+
+			// if connected set the authentication state to authenticated
+			if (currentConnectionState.getCurrentStateValue()[0].getName()
+					.equals(ConnectedStateValue.class.getSimpleName()))
+			{
+				// update the authentication state
+				this.currentState.setState(PushLinkAuthenticationState.class
+						.getSimpleName(), new PushLinkAuthenticationState(
+						new AuthenticatedStateValue()));
+			} else
+			{
+				// update the current authentication state
+				this.currentState.setState(PushLinkAuthenticationState.class
+						.getSimpleName(), new PushLinkAuthenticationState(
+						new NeedingAuthenticationStateValue()));
+			}
+
+			// notify deactivation of the push-link authentication
+			this.notifyDeactivatedPushLinkAuth();
+		}
 
 	}
 
 	@Override
 	public void startPushLinkAuth()
 	{
-		// TODO Auto-generated method stub
+		// start the authentication process
+		this.network.startPushLinkAuthentication(this.bridgeIp);
+
+		// change the state
+		this.currentState.setState(PushLinkAuthenticationState.class
+				.getSimpleName(), new PushLinkAuthenticationState(
+				new ActivePushLinkAuthenticationStateValue()));
+
+		// notify activation
+		this.notifyActivatedPushLinkAuth();
+
+		// start the discovery enable timer...
+		// TODO: improve this in order to start as soon as possible
+		this.pushLinkAuthenticationTimer = new Timer();
+		this.pushLinkAuthenticationTimer.schedule(new TimerTask()
+		{
+
+			@Override
+			public void run()
+			{
+				stopPushLinkAuth();
+			}
+		}, this.pushLinkTimeoutMillis);
 
 	}
 
 	@Override
 	public void notifyDeactivatedPushLinkAuth()
 	{
-		// TODO Auto-generated method stub
-
+		((HueBridge) this.device).notifyDeactivatedPushLinkAuth();
 	}
 
 	@Override
 	public void notifyActivatedPushLinkAuth()
 	{
-		// TODO Auto-generated method stub
-
+		((HueBridge) this.device).notifyActivatedPushLinkAuth();
 	}
 
 	@Override
@@ -180,6 +249,9 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		// update the device state
 		this.currentState.setState(ConnectionState.class.getSimpleName(),
 				new ConnectionState(new ConnectedStateValue()));
+
+		// stop any authentication being on
+		this.stopPushLinkAuth();
 
 		// log connection
 		this.logger.log(LogService.LOG_DEBUG,
@@ -226,6 +298,16 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 
 	}
 
+	@Override
+	public void onAuthenticationRequired()
+	{
+		// update the device state
+		this.currentState.setState(PushLinkAuthenticationState.class
+				.getSimpleName(), new PushLinkAuthenticationState(
+				new NeedingAuthenticationStateValue()));
+
+	}
+
 	/**
 	 * Adds the device with the given local Id to the set of devices already
 	 * "known" by the gateway instance. This avoids duplication of devices
@@ -256,6 +338,10 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 		// Initially left empty
 	}
 
+	/**
+	 * Defined the initial state of the device connected to this driver
+	 * instance.
+	 */
 	private void initializeStates()
 	{
 

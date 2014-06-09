@@ -104,6 +104,14 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 
 	}
 
+	/**
+	 * Called when the driver is activated, performs required initializations
+	 * and service registration
+	 * 
+	 * @param context
+	 *            The OSGi {@link BundleContext} needed to perform service
+	 *            registration (de-registration).
+	 */
 	public void activate(BundleContext context)
 	{
 		// store the bundle context
@@ -122,6 +130,9 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 		this.registerNetworkService();
 	}
 
+	/**
+	 * Deactivates the driver, i.e, removes its services from the framework.
+	 */
 	public void deactivate()
 	{
 		// unregister the service
@@ -169,10 +180,10 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 	 */
 	public void discoverNewBridges()
 	{
-		//get the bridge search manager
+		// get the bridge search manager
 		PHBridgeSearchManager sm = (PHBridgeSearchManager) this.sdk
 				.getSDKService(PHHueSDK.SEARCH_BRIDGE);
-		
+
 		// Start the UPNP Searching of local bridges.
 		sm.search(true, true, true);
 	}
@@ -238,27 +249,51 @@ public class HueNetworkDriver implements HueNetwork, PHSDKListener
 	}
 
 	@Override
+	public void startPushLinkAuthentication(String bridgeIp)
+	{
+		// build the PHAccessPoint instance
+		PHAccessPoint accessPoint = new PHAccessPoint();
+		accessPoint.setIpAddress(bridgeIp);
+		accessPoint.setUsername(this.hueUsername);
+
+		// start the pushLinkAuthentication
+		this.sdk.startPushlinkAuthentication(accessPoint);
+	}
+
+	@Override
 	public void onAccessPointsFound(List<PHAccessPoint> accessPoints)
 	{
-		//debug log
+		// debug log
 		this.logger.log(LogService.LOG_DEBUG, "Detected new bridges...\n"
 				+ accessPoints);
-		
-		//get the list of registered listeners, if any
-		for(HueBridgeDiscoveryListener listener : this.hueBridgeDiscoveryListeners)
+
+		// get the list of registered listeners, if any
+		for (HueBridgeDiscoveryListener listener : this.hueBridgeDiscoveryListeners)
 		{
-			//notify the listener
+			// notify the listener
 			listener.onAccessPointsFound(accessPoints);
 		}
 
 	}
 
 	@Override
-	public void onAuthenticationRequired(PHAccessPoint arg0)
+	public void onAuthenticationRequired(PHAccessPoint accessPoint)
 	{
-		// TODO: handle bridge discovery work flow here
+		// debug
 		this.logger.log(LogService.LOG_DEBUG, "Authentication required for: "
-				+ arg0);
+				+ accessPoint);
+
+		// get the registered listeners
+		Set<HueConnectionListener> listeners = this.hueBridgeConnectionListeners
+				.get(accessPoint.getIpAddress());
+
+		// notify the registered listeners
+		for (HueConnectionListener listener : listeners)
+		{
+			// deliver the authentication-required event to registered listeners
+			listener.onAuthenticationRequired();
+		}
+
 	}
 
 	@Override

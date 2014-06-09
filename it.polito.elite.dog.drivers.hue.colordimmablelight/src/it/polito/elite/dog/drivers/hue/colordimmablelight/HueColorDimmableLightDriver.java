@@ -32,42 +32,45 @@ import org.osgi.framework.BundleContext;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.log.LogService;
 
-
-
 /**
+ * The driver manager for handling Philips Hue colored lights
+ * 
  * @author bonino
- *
+ * 
  */
 public class HueColorDimmableLightDriver extends HueDeviceDriver
 {
 	// the step entity in percentage
 	protected int stepPercentage;
-	
+
 	/**
-	 * 
+	 * Class constructor, initializes inner data structures
 	 */
 	public HueColorDimmableLightDriver()
 	{
-		//fill supported device categories
+		// fill supported device categories
 		this.deviceCategories.add(ColorDimmableLight.class.getName());
 	}
 
 	@Override
 	public HueDriverInstance createHueDriverInstance(HueNetwork hueNetwork,
-			ControllableDevice device, String localId, HueGatewayDriverInstance gateway,
-			BundleContext context)
+			ControllableDevice device, String localId,
+			HueGatewayDriverInstance gateway, BundleContext context)
 	{
-		return new HueColorDimmableLightDriverInstance(hueNetwork, device, localId, gateway, this.stepPercentage, context);
+		return new HueColorDimmableLightDriverInstance(hueNetwork, device,
+				localId, gateway, this.stepPercentage, context);
 	}
 
 	@Override
-	public void updated(Dictionary<String, ?> properties) throws ConfigurationException
+	public void updated(Dictionary<String, ?> properties)
+			throws ConfigurationException
 	{
 		if (properties != null)
-		{			
+		{
 			// try to get the step entity
-			String stepEntityAsString = (String) properties.get(HueInfo.STEP_PERCENT);
-			
+			String stepEntityAsString = (String) properties
+					.get(HueInfo.STEP_PERCENT);
+
 			// check not null
 			if (stepEntityAsString != null)
 			{
@@ -75,14 +78,13 @@ public class HueColorDimmableLightDriver extends HueDeviceDriver
 				stepEntityAsString = stepEntityAsString.trim();
 				// parse the string
 				this.stepPercentage = Integer.valueOf(stepEntityAsString);
-			}
-			else
+			} else
 			{
 				this.logger.log(LogService.LOG_WARNING, HueInfo.STEP_PERCENT
 						+ " not defined in configuraton file for "
 						+ HueColorDimmableLightDriver.class.getName());
 			}
-			
+
 			// call the normal updated method
 			super.updated(properties);
 		}
