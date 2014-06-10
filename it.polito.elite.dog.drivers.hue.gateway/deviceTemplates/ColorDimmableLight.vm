@@ -115,11 +115,13 @@
 					<dhc:statevalue name="level" class="LevelStateValue" />
 				</dhc:statevalues>
 			</dhc:state>
-			<!-- <dhc:state>
+			<dhc:state class="ColorStateHSB">
 				<dhc:statevalues>
-					<dhc:statevalue name="color" class="ColorStateValue" />
+					<dhc:statevalue name="color" class="BrightnessStateValue" />
+					<dhc:statevalue name="color" class="HueStateValue" />
+					<dhc:statevalue name="color" class="SaturationStateValue" />
 				</dhc:statevalues>
-			</dhc:state>-->
+			</dhc:state>
 		</dhc:device>
 	</dhc:controllables>
 </dhc:dogHomeConfiguration>
