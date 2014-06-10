@@ -40,11 +40,21 @@
 			<!-- TODO: check this definition -->
 			<dhc:controlFunctionality class="ColorControlFunctionality">
 				<dhc:commands>
-					<dhc:command id="SetColorCommand_$name" name="SetColorCommand_$name"
-						class="SetColorCommand">
-						<dhc:param value="setColor" name="realCommandName" />
-						<dhc:param value="1" name="nParams" />
-						<dhc:param value="value" name="commandParamName" type="String" />
+					<dhc:command id="SetColorHSBCommand_$name" name="SetColorHSBCommand_$name"
+						class="SetColorHSBCommand">
+						<dhc:param value="setColorHSB" name="realCommandName" />
+						<dhc:param value="3" name="nParams" />
+						<dhc:param value="hue" name="commandParamName" type="Integer" />
+						<dhc:param value="saturation" name="commandParamName" type="Integer" />
+						<dhc:param value="brightness" name="commandParamName" type="Integer" />
+					</dhc:command>
+					<dhc:command id="SetColorRGBCommand_$name" name="SetColorRGBCommand_$name"
+						class="SetColorRGBCommand">
+						<dhc:param value="setColorRGB" name="realCommandName" />
+						<dhc:param value="3" name="nParams" />
+						<dhc:param value="red" name="commandParamName" type="Integer" />
+						<dhc:param value="green" name="commandParamName" type="Integer" />
+						<dhc:param value="blue" name="commandParamName" type="Integer" />
 					</dhc:command>
 				</dhc:commands>
 			</dhc:controlFunctionality>

@@ -58,13 +58,25 @@ public class HueGatewayDriver implements Driver, ManagedService
 	// String identifier for driver id
 	public static final String DRIVER_ID = "it.polito.elite.drivers.hue.gateway";
 
+	// the configuration identifier for the discovery delay
+	public static final String DEVICE_DISCOVERY_DELAY = "deviceDiscoveryDelayMillis";
+
+	// the configuration identifier for the push link timeout
+	public static final String PUSH_LINK_TIMEOUT = "pushLinkTimeoutMillis";
+
+	// the device discovery delay in milliseconds
+	public int deviceDiscoveryDelayMillis = 20000;
+
+	// the push-link authentication timeout
+	public int pushLinkTimeoutMillis = 20000;
+
 	// a reference to the network driver
 	private AtomicReference<HueNetwork> network;
 
 	// a reference to the device factory service used to handle run-time
 	// creation of devices in dog.
 	private AtomicReference<DeviceFactory> deviceFactory;
-	
+
 	// a reference to the hue manager driver
 	private AtomicReference<HueManagerDriver> hueManagerDriver;
 
@@ -95,6 +107,9 @@ public class HueGatewayDriver implements Driver, ManagedService
 
 		// initialize the device factory reference
 		this.deviceFactory = new AtomicReference<DeviceFactory>();
+		
+		//initialize the hue manager atomic reference
+		this.hueManagerDriver = new AtomicReference<HueManagerDriver>();
 	}
 
 	/**
@@ -128,7 +143,8 @@ public class HueGatewayDriver implements Driver, ManagedService
 				&& (this.regDriver == null))
 		{
 			Hashtable<String, Object> propDriver = new Hashtable<String, Object>();
-			propDriver.put(DeviceCostants.DRIVER_ID, HueGatewayDriver.DRIVER_ID);
+			propDriver
+					.put(DeviceCostants.DRIVER_ID, HueGatewayDriver.DRIVER_ID);
 			propDriver.put(DeviceCostants.GATEWAY_COUNT,
 					connectedGateways.size());
 
@@ -201,14 +217,18 @@ public class HueGatewayDriver implements Driver, ManagedService
 			// unregisters this driver from the OSGi framework
 			unRegister();
 	}
-	
+
 	/**
 	 * 
-	 * @param networkDriver
+	 * @param hueManagerDriver
 	 */
 	public void addedHueManagerDriver(HueManagerDriver hueManagerDriver)
 	{
 		this.hueManagerDriver.set(hueManagerDriver);
+		
+		//update the set of connected gateways
+		for(String gwIpAddress : this.connectedGateways.keySet())
+			this.hueManagerDriver.get().getTheInstance().addGateway(gwIpAddress);
 	}
 
 	/**
@@ -284,7 +304,9 @@ public class HueGatewayDriver implements Driver, ManagedService
 						// create a new driver instance
 						HueGatewayDriverInstance driverInstance = new HueGatewayDriverInstance(
 								this.network.get(), this.deviceFactory.get(),
-								device, gatewayAddress, this.context);
+								device, gatewayAddress,
+								this.deviceDiscoveryDelayMillis,
+								this.pushLinkTimeoutMillis, this.context);
 
 						// associate device and driver
 						device.setDriver(driverInstance);
@@ -305,15 +327,20 @@ public class HueGatewayDriver implements Driver, ManagedService
 								connectedGateways.size());
 
 						this.regDriver.setProperties(propDriver);
-						
-						//---- avoid gateway discovery by the hue manager singleton
-						
-						//get the only manager instance
-						HueManagerDriverInstance manager = this.hueManagerDriver.get().getTheInstance();
-						
-						//if not null
-						if(manager!=null)
-							manager.addGateway(gatewayAddress);
+
+						// ---- avoid gateway discovery by the hue manager
+						// singleton
+
+						if (this.hueManagerDriver.get() != null)
+						{
+							// get the only manager instance
+							HueManagerDriverInstance manager = this.hueManagerDriver
+									.get().getTheInstance();
+
+							// if not null
+							if (manager != null)
+								manager.addGateway(gatewayAddress);
+						}
 					}
 				}
 			}
@@ -349,11 +376,36 @@ public class HueGatewayDriver implements Driver, ManagedService
 	}
 
 	@Override
-	public void updated(Dictionary<String, ?> arg0)
+	public void updated(Dictionary<String, ?> config)
 			throws ConfigurationException
 	{
-		// TODO Handle configuration here....
-		this.logger.log(LogService.LOG_DEBUG, "updated");
+		if ((config != null) && (!config.isEmpty()))
+		{
+			// check properties
+			String deviceDiscoveryDelayAsString = (String) config
+					.get(HueGatewayDriver.DEVICE_DISCOVERY_DELAY);
+
+			// store the property value
+			if (deviceDiscoveryDelayAsString != null)
+				this.deviceDiscoveryDelayMillis = Integer
+						.valueOf(deviceDiscoveryDelayAsString);
+
+			// check the push link timeout
+			String pushLinkAuthTimeoutAsString = (String) config
+					.get(HueGatewayDriver.PUSH_LINK_TIMEOUT);
+
+			// store the property value
+			if (pushLinkAuthTimeoutAsString != null)
+				this.pushLinkTimeoutMillis = Integer
+						.valueOf(pushLinkAuthTimeoutAsString);
+
+			// debug
+			this.logger.log(LogService.LOG_DEBUG,
+					"updated:\n\tdevice discovery delay (ms): "
+							+ this.deviceDiscoveryDelayMillis
+							+ "\n\tpush link auth timeout (ms): "
+							+ this.pushLinkTimeoutMillis);
+		}
 	}
 
 }

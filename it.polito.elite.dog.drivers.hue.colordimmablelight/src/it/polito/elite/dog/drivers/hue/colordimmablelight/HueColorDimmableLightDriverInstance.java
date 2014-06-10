@@ -20,6 +20,8 @@ package it.polito.elite.dog.drivers.hue.colordimmablelight;
 
 import it.polito.elite.dog.core.library.model.ControllableDevice;
 import it.polito.elite.dog.core.library.model.DeviceStatus;
+import it.polito.elite.dog.core.library.model.color.HSBColor;
+import it.polito.elite.dog.core.library.model.color.RGBColor;
 import it.polito.elite.dog.core.library.model.devicecategory.ColorDimmableLight;
 import it.polito.elite.dog.core.library.model.devicecategory.Controllable;
 import it.polito.elite.dog.core.library.model.state.ColorStateHSB;
@@ -450,9 +452,10 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 		}
 
 		// handle HSB notification
-		this.notifyChangedColorHSB(lastKnownLightState.getSaturation(),
-				lastKnownLightState.getBrightness(),
-				lastKnownLightState.getHue());
+		HSBColor newColor = new HSBColor(lastKnownLightState.getHue(), lastKnownLightState.getSaturation(),
+				lastKnownLightState.getBrightness());
+		this.notifyChangedColorHSB(newColor);
+		this.notifyChangedColorRGB(newColor.toRGBColor());
 
 		// handle level state
 		Measure<Integer, Dimensionless> level = DecimalMeasure.valueOf(
@@ -469,15 +472,9 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 
 	}
 
-	@Override
-	public void setColorRGB(Integer red, Integer blue, Integer green)
-	{
-		// TODO Auto-generated method stub
-
-	}
 
 	@Override
-	public void setColorHSB(Integer saturation, Integer brightness, Integer hue)
+	public void setColorHSB(HSBColor colorHSB)
 	{
 		// get the bridge object (asks it to the network driver to get the most
 		// updated version) TODO: check if the received reference is kept up to
@@ -496,9 +493,9 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 			PHLightState newLightState = new PHLightState();
 
 			// update hue and saturation
-			newLightState.setHue(hue);
-			newLightState.setSaturation(saturation);
-			newLightState.setBrightness(brightness);
+			newLightState.setHue(colorHSB.getHue());
+			newLightState.setSaturation(colorHSB.getSaturation());
+			newLightState.setBrightness(colorHSB.getBrightness());
 
 			// update the real device
 			bridge.updateLightState(light, newLightState);
@@ -512,22 +509,29 @@ public class HueColorDimmableLightDriverInstance extends HueDriverInstance
 	}
 
 	@Override
-	public void notifyChangedColorRGB(Integer red, Integer blue, Integer green)
+	public void notifyChangedColorHSB(HSBColor colorHSB)
 	{
-		notifyChangedColorRGB(red, blue, green);
-	}
-
-	@Override
-	public void notifyChangedColorHSB(Integer saturation, Integer brightness,
-			Integer hue)
-	{
-		((ColorDimmableLight) this.device).notifyChangedColorHSB(saturation,
-				brightness, hue);
+		((ColorDimmableLight) this.device).notifyChangedColorHSB(colorHSB);
 	}
 
 	@Override
 	public void notifyJoinedGroup(Integer groupNumber)
 	{
 		((ColorDimmableLight) this.device).notifyJoinedGroup(groupNumber);
+	}
+
+	@Override
+	public void setColorRGB(RGBColor colorRGB)
+	{
+		//convert to hsb
+		this.setColorHSB(colorRGB.toHSB());		
+	}
+
+	@Override
+	public void notifyChangedColorRGB(
+			RGBColor colorRGB)
+	{
+		((ColorDimmableLight) this.device).notifyChangedColorRGB(colorRGB);
+		
 	}
 }

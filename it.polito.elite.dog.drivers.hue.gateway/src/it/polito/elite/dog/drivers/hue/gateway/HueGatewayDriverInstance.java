@@ -82,7 +82,8 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 
 	public HueGatewayDriverInstance(HueNetwork hueNetwork,
 			DeviceFactory deviceFactory, ControllableDevice device,
-			String gatewayAddress, BundleContext context)
+			String gatewayAddress, int deviceDiscoveryDealyMillis,
+			int pushLinkTimeoutMillis, BundleContext context)
 	{
 		// call the superclass constructor
 		super(hueNetwork, device, gatewayAddress);
@@ -95,6 +96,12 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 
 		// store the device factory instance
 		this.deviceFactory = deviceFactory;
+
+		// store the discovery delay millis
+		this.deviceDiscoveryDelayMillis = deviceDiscoveryDealyMillis;
+
+		// store the push link authentication timeout
+		this.pushLinkTimeoutMillis = pushLinkTimeoutMillis;
 
 		// create the device descriptor factory
 		try
@@ -172,30 +179,30 @@ public class HueGatewayDriverInstance extends HueDriverInstance implements
 			if (this.pushLinkAuthenticationTimer != null)
 				// stop the timer
 				this.pushLinkAuthenticationTimer.cancel();
-
-			// get the current connection state
-			ConnectionState currentConnectionState = (ConnectionState) this.currentState
-					.getState(ConnectionState.class.getSimpleName());
-
-			// if connected set the authentication state to authenticated
-			if (currentConnectionState.getCurrentStateValue()[0].getName()
-					.equals(ConnectedStateValue.class.getSimpleName()))
-			{
-				// update the authentication state
-				this.currentState.setState(PushLinkAuthenticationState.class
-						.getSimpleName(), new PushLinkAuthenticationState(
-						new AuthenticatedStateValue()));
-			} else
-			{
-				// update the current authentication state
-				this.currentState.setState(PushLinkAuthenticationState.class
-						.getSimpleName(), new PushLinkAuthenticationState(
-						new NeedingAuthenticationStateValue()));
-			}
-
-			// notify deactivation of the push-link authentication
-			this.notifyDeactivatedPushLinkAuth();
 		}
+
+		// get the current connection state
+		ConnectionState currentConnectionState = (ConnectionState) this.currentState
+				.getState(ConnectionState.class.getSimpleName());
+
+		// if connected set the authentication state to authenticated
+		if (currentConnectionState.getCurrentStateValue()[0].getName().equals(
+				ConnectedStateValue.class.getSimpleName()))
+		{
+			// update the authentication state
+			this.currentState.setState(PushLinkAuthenticationState.class
+					.getSimpleName(), new PushLinkAuthenticationState(
+					new AuthenticatedStateValue()));
+		} else
+		{
+			// update the current authentication state
+			this.currentState.setState(PushLinkAuthenticationState.class
+					.getSimpleName(), new PushLinkAuthenticationState(
+					new NeedingAuthenticationStateValue()));
+		}
+
+		// notify deactivation of the push-link authentication
+		this.notifyDeactivatedPushLinkAuth();
 
 	}
 
