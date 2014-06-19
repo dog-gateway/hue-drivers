@@ -7,6 +7,13 @@ Still under development.
 
 ### Changelog ###
 
+*2014/06/18*
+--------------
+
+* Added support to Hue Bridge discovery and PushLink authentication (Experimental)
+* Device discovery fully supported
+* Completed color control 
+* Completed On/Off control
 
 *2014/05/26*
 --------------
