@@ -1,9 +1,8 @@
 hue-drivers
 ===========
 
-Drivers for the Philips Hue bridge and devices
+Drivers (Experimental) for the Philips Hue bridge and devices
 
-Still under development.
 
 ### Changelog ###
 
