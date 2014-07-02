@@ -6,6 +6,12 @@ Drivers (Experimental) for the Philips Hue bridge and devices
 
 ### Changelog ###
 
+*2014/06/27*
+--------------
+
+* Tested successfully the Hue Bridge discovery and the PushLink authentication
+* Found a bug on light-strip handling: CT_COLOR_LAMP is wrongly mapped to OnOffLight instead of being mapped to ColorDimmableLight
+
 *2014/06/18*
 --------------
 
