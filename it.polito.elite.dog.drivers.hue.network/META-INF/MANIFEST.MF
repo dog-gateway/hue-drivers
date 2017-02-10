@@ -18,3 +18,4 @@ Export-Package: com.philips.lighting.hue.sdk,
  it.polito.elite.dog.drivers.hue.network,
  it.polito.elite.dog.drivers.hue.network.info,
  it.polito.elite.dog.drivers.hue.network.interfaces
+Bundle-ActivationPolicy: lazy
