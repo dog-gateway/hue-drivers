@@ -249,6 +249,10 @@ public abstract class HueDeviceDriver implements Driver, ManagedService
 				}
 			}
 		}
+		else
+		{
+			this.context.ungetService(reference);
+		}
 
 		return null;
 	}
